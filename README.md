@@ -1,4 +1,4 @@
-# Internet connected A/C remote using Esp8266 (arduino compatible) board
+# Internet connected A/C remote using Esp8266 (arduino compatible) board / test
 
 ![Imgur](https://i.imgur.com/Dpmky3r.png?1)
 
