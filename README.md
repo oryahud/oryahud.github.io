@@ -1,4 +1,4 @@
-# Internet connected A/C remote using Esp8266 (arduino compatible) board / test
+# Internet connected A/C remote using Esp8266 (arduino compatible) board
 
 ![Build](https://github.com/zappatta/wremote/workflows/Build/badge.svg)
 ![Test](https://github.com/zappatta/wremote/workflows/Test/badge.svg)
