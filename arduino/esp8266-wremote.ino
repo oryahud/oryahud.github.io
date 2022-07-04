@@ -4,27 +4,30 @@
 #include <Tadiran.h>
 #include <ESP8266WiFi.h>
 #include <stdio.h>
+// #include <OneWire.h> // use for digital read only
+// #include <DallasTemperature.h> // use for digital read only
 
 #include "config.h"
+
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+// OneWire oneWire(TEMP_SENSOR_PIN); // use for digital read only
+// DallasTemperature tempSensor(&oneWire); // use for digital read only
 
 void setup() {
   // put your setup code here, to run once:
-    Serial.begin(115200);
-    WiFi.mode(WIFI_STA);
-    pinMode(STATUS_LED, OUTPUT);
-    pinMode(IR_LED_PIN, OUTPUT);
-      
-
-    setupWifi();
-
-    client.setServer(MQTT_SERVER, MQTT_PORT);
-    client.setCallback(mqttCallback);
- 
+  Serial.begin(115200);
+  WiFi.mode(WIFI_STA);
+  pinMode(STATUS_LED, OUTPUT);
+  pinMode(IR_LED_PIN, OUTPUT);
     
-    digitalWrite(STATUS_LED,LOW);
+  setupWifi();
+
+  client.setServer(MQTT_SERVER, MQTT_PORT);
+  client.setCallback(mqttCallback);
+  
+  digitalWrite(STATUS_LED,LOW);
 }
 
 int loopCounter = 0;
@@ -38,7 +41,7 @@ void loop() {
   }
   client.loop();
 
-  if(loopCounter == 5){
+  if (loopCounter == 5) {
     loopCounter = 0;
     sendTempratureUpdate();
   }
@@ -51,7 +54,6 @@ void loop() {
 }
 
 void setupWifi() {
-
   delay(10);
   // We start by connecting to a WiFi network
   Serial.println();
@@ -65,7 +67,7 @@ void setupWifi() {
     delay(500);
     Serial.print(".");
   }
-  if(!wasLit){
+  if (!wasLit) {
     digitalWrite(STATUS_LED,HIGH);
     wasLit = true;
   }
@@ -94,7 +96,8 @@ void reconnect() {
       Serial.println("connected");
       
       client.subscribe(strcat(MQTT_SUBJECT,"set"));
-    } else {
+    } 
+    else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
       Serial.println(" try again in 5 seconds");
@@ -112,56 +115,50 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   
   char strPayload[length +1];
   strPayload[length] = '\0';
-  for(int i=0;i<length;i++){
+  for (int i=0; i<length; i++) {
     strPayload[i] = payload[i];
   }
 
-  if(strcmp(topic, strcat(MQTT_SUBJECT,"set")) == 0){
+  if (strcmp(topic, strcat(MQTT_SUBJECT, "set")) == 0) {
     executeCommand(String(strPayload));
   }
 }
 
 void executeCommand(String command){
+  IRsend irsend(IR_LED_PIN);    
+  Tadiran tadiran(1, 1, 26, 0);
+
+  char* comma = ",";
   
-    IRsend irsend(IR_LED_PIN);    
-    Tadiran tadiran(1, 1, 26, 0);
+  char cmdBuf[50];
+  command.toCharArray(cmdBuf, 50);
+  int power = atoi(strtok(cmdBuf, comma));
+  int temp = atoi(strtok(NULL, comma));
+  int acMode = atoi(strtok(NULL, comma));
+  int fan = atoi(strtok(NULL, comma));
+      
+  tadiran.setMode(acMode);
+  tadiran.setTemeprature(temp);
+  tadiran.setFan(fan);
+  tadiran.setState(power);
 
+  irsend.sendRaw(tadiran.codes, TADIRAN_BUFFER_SIZE, 38);
+  delay(500);
+  irsend.sendRaw(tadiran.codes, TADIRAN_BUFFER_SIZE, 38);
+  delay(500);
+  irsend.sendRaw(tadiran.codes, TADIRAN_BUFFER_SIZE, 38);
+  //send 3 times to decrease chances of AC not getting msg
 
-    char* comma = ",";
-    
-    char cmdBuf[50];
-    command.toCharArray(cmdBuf, 50);
-    int power = atoi(strtok(cmdBuf, comma));
-    int temp = atoi(strtok(NULL, comma));
-    int acMode = atoi(strtok(NULL, comma));
-    int fan = atoi(strtok(NULL, comma));
-        
-    tadiran.setMode(acMode);
-    tadiran.setTemeprature(temp);
-    tadiran.setFan(fan);
-    tadiran.setState(power);
-
-    irsend.sendRaw(tadiran.codes, TADIRAN_BUFFER_SIZE, 38);
-    delay(500);
-    irsend.sendRaw(tadiran.codes, TADIRAN_BUFFER_SIZE, 38);
-    delay(500);
-    irsend.sendRaw(tadiran.codes, TADIRAN_BUFFER_SIZE, 38);
-    //send 3 times to decrease chances of AC not getting msg
-
-    Serial.println("Executed command");    
+  Serial.println("Executed command");    
 }
 
-void sendTempratureUpdate(){
-  
-
-    int curTemp = getTemp();
-    char cstr[16];
-    itoa(curTemp, cstr, 10);
-    client.publish(strcat(MQTT_SUBJECT,"ambianceTemp"), cstr);
-
-    
+void sendTempratureUpdate() {
+  char cstr[16];
+  itoa(getTemp(), cstr, 10);
+  client.publish(strcat(MQTT_SUBJECT, "ambianceTemp"), cstr);
 }
 
+// Analog read
 int getTemp(){
     int reading = analogRead(TEMP_SENSOR_PIN);  
     
@@ -171,3 +168,21 @@ int getTemp(){
     float tempratureC = (voltage - 0.5) * 100 ;
     return round(tempratureC);    
 }
+
+// Digital read 
+// int getTemp() {
+//   Serial.print("Requesting temperatures...");
+//   tempSensor.requestTemperatures();
+//   Serial.println("DONE");
+
+//   float tempC = sensors.getTempCByIndex(0); // make sure you don't have multiple sensors
+
+//   if (tempC == DEVICE_DISCONNECTED_C) {
+//     Serial.println("Error: Could not read temperature data");
+//     return 0;
+//   }
+
+//   Serial.print("Temperature for the device 1 (index 0) is: ");
+//   Serial.println(tempC);
+//   return round(tempC);    
+// }

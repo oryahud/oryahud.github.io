@@ -6,6 +6,10 @@
 
     * To get this lib to work with ESP8266-IRremote, I had to modify it to use uint16_t instead of normal unsigned int. That is why the the link above leads to my own fork. Nonetheless, i claim no responsibility and deserve no credit for this library. You can probably achieve the same results with casting in the .ino file.
 * [PubSubClient](https://github.com/knolleary/pubsubclient)
+
+* If you want to read temp digitaly
+    * [OneWire](https://github.com/PaulStoffregen/OneWire)
+    * [DallasTemperature](https://github.com/milesburton/Arduino-Temperature-Control-Library)
     
 ### Getting started    
 * [Install](https://www.arduino.cc/en/Guide/Libraries) these library on your arduino IDE
