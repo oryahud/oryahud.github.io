@@ -4,16 +4,16 @@
 #include <Tadiran.h>
 #include <ESP8266WiFi.h>
 #include <stdio.h>
-// #include <OneWire.h> // use for digital read only
-// #include <DallasTemperature.h> // use for digital read only
+#include <OneWire.h> // use for digital read
+#include <DallasTemperature.h> // use for digital read
 
 #include "config.h"
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-// OneWire oneWire(TEMP_SENSOR_PIN); // use for digital read only
-// DallasTemperature tempSensor(&oneWire); // use for digital read only
+OneWire oneWire(TEMP_SENSOR_PIN); // use for digital read 
+DallasTemperature tempSensor(&oneWire); // use for digital read
 
 void setup() {
   // put your setup code here, to run once:
@@ -154,35 +154,35 @@ void executeCommand(String command){
 
 void sendTempratureUpdate() {
   char cstr[16];
-  itoa(getTemp(), cstr, 10);
+  itoa(getTempAnalog(), cstr, 10);
   client.publish(strcat(MQTT_SUBJECT, "ambianceTemp"), cstr);
 }
 
 // Analog read
-int getTemp(){
+int getTempAnalog() {
     int reading = analogRead(TEMP_SENSOR_PIN);  
     
-    // converting that reading to voltage, for 3.3v arduino use 3.3
-    float voltage = reading * 3.3;
+    // converting that reading to voltage
+    float voltage = reading * TEMP_SENSOR_VOLTAGE;
     voltage /= 1024.0;     
     float tempratureC = (voltage - 0.5) * 100 ;
     return round(tempratureC);    
 }
 
 // Digital read 
-// int getTemp() {
-//   Serial.print("Requesting temperatures...");
-//   tempSensor.requestTemperatures();
-//   Serial.println("DONE");
+int getTempDigital() {
+  Serial.print("Requesting temperatures...");
+  tempSensor.requestTemperatures();
+  Serial.println("DONE");
 
-//   float tempC = sensors.getTempCByIndex(0); // make sure you don't have multiple sensors
+  float tempC = tempSensor.getTempCByIndex(0); // make sure you don't have multiple sensors
 
-//   if (tempC == DEVICE_DISCONNECTED_C) {
-//     Serial.println("Error: Could not read temperature data");
-//     return 0;
-//   }
+  if (tempC == DEVICE_DISCONNECTED_C) {
+    Serial.println("Error: Could not read temperature data");
+    return 0;
+  }
 
-//   Serial.print("Temperature for the device 1 (index 0) is: ");
-//   Serial.println(tempC);
-//   return round(tempC);    
-// }
+  Serial.print("Temperature for the device 1 (index 0) is: ");
+  Serial.println(tempC);
+  return round(tempC);    
+}
